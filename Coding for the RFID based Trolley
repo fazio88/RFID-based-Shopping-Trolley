@@ -1,0 +1,181 @@
+/ RFID BASED PROJECTS
+
+// RFID based shopping trolley 
+
+
+// RFID Tx pin at P3.0(Rx)
+// CARD1- COST-RS.50 , SOAP
+// CARD1- COST-RS.100 , BRUSH
+// 0 , 5          
+
+#include<reg51.h>
+unsigned int data_out,command=0x80,temp;
+sfr lcd_data_pin=0x80; //P1 ADDRESS IS 90H , P0 ADDRESS IS 80H	LCD DATA PINS
+10
+sbit rs=P2^5;          //Register select RS 
+sbit rw=P2^6;          //Read/Write 	 RW
+sbit en=P2^7;          //Enable pin		 EN
+unsigned char card_id[11];
+unsigned char comp[11] = {'$','0','0','1','2','6','6','0','2','5','2'};
+
+void delay(unsigned int count)    //Function to provide delay
+{
+    int i,j;
+     for(i=0;i<count;i++)
+     for(j=0;j<1275;j++);
+}
+
+void lcd_command(unsigned char comm)   //Lcd command funtion
+{
+     lcd_data_pin=comm;
+     en=1;
+     rs=0;
+     rw=0;
+               
+11
+
+     delay(1);
+     en=0;
+
+}
+
+void lcd_data(unsigned char disp)  //Lcd data function
+{
+     lcd_data_pin=disp;
+     en=1;
+     rs=1;
+     rw=0;
+     delay(1);
+     en=0;
+}
+
+lcd_string(unsigned char *disp)     //Function to send string 
+{
+     int x;
+     for(x=0;disp[x]!=0;x++)
+12
+    {
+         lcd_data(disp[x]);
+    }
+}
+void lcd_ini()                  //Function to initialize the LCD
+{
+    lcd_command(0x38);          
+    delay(5);
+    lcd_command(0x0c);        
+    delay(5);
+    lcd_command(0x80);
+    delay(5);
+} 
+
+void gateopen()                  //Function to initialize the stepper motor
+
+{
+ unsigned char d,z;
+  for(d=0;d<13;d++)
+
+13
+           {  
+	  P0=0x11;
+	  delay(10);
+	  P0=0x22;
+	  delay(10);
+	  P0=0x44;
+	  delay(10);
+	  P0=0x88;
+	  delay(10);
+		   }
+
+      delay(400);		   
+  for(z=0;z<13;z++)
+           {  
+	  P0=0x88;
+	  delay(10);
+	  P0=0x44;
+	  delay(10);
+	  P0=0x22;
+
+14
+	  delay(10);
+	  P0=0x11;
+
+	  delay(10);
+	       }
+
+}
+void recieve()               //Function to recieve data serialy from RS232 
+{
+    unsigned char k;
+     for(k=0;k<11;k++)
+     { 
+          while(RI==0); 
+          card_id[k]=SBUF;
+          RI=0;
+    }
+}
+
+
+
+15
+void main()
+{
+unsigned char l;
+	char n;
+ xy:TMOD=0x20;            //Enable Timer 1
+    TH1=0XFD;
+    SCON=0x50;
+    TR1=1;                // Triggering Timer 1
+    lcd_ini();
+   
+	lcd_command(0x01); 
+	lcd_command(0x80);        //Place cursor to second position of first line 
+    lcd_string("RFID BASED ");
+	lcd_command(0xc0);        //Place cursor to second position of first line 
+    lcd_string("SHOPPING TROLLEY");
+
+	delay(150);
+    lcd_command(0x01);          
+    delay(5);
+
+16
+	lcd_command(0x81);        //Place cursor to second position of first line 
+    lcd_string("SCAN RFID CARD");
+
+	   
+    recieve();
+   	n=card_id[10];
+    
+	if (n=='5')	     	//9
+	  {
+	lcd_command(0x01);
+	lcd_command(0x80); 
+	lcd_string("ID:");	
+	for(l=1;l<11;l++)
+         { 
+              lcd_data(card_id[l]);
+         }
+	  
+	lcd_command(0xc0);  
+	lcd_string("COST-RS.50,SOAP");
+	delay(300);
+17
+//gateopen(); 
+goto xy;
+ } 
+else if (n=='0')	  //8
+    {
+	lcd_command(0x01);
+	lcd_command(0x80); 
+	lcd_string("ID:");	
+	for(l=1;l<11;l++)
+         { 
+              lcd_data(card_id[l]);
+         }
+            lcd_command(0xc0);  
+	lcd_string("COST-RS.30,BRUSH");
+	delay(300);
+         //gateopen(); 
+	goto xy;
+}
+else
+    goto xy;
